@@ -1,8 +1,6 @@
-"use strict";
-
+const miio = require("../miio");
 const chalk = require("chalk");
-const log = require("../log");
-const deviceFinder = require("../device-finder");
+const log = require("../miio/cli/log");
 
 const GROUPS = [
     { name: "Power", tags: ["cap:power", "cap:switchable-power"] },
@@ -28,31 +26,16 @@ const GROUPS = [
     { name: "miIO", tags: ["type:miio"] },
 ];
 
-exports.command = "inspect <idOrIp>";
-exports.description = "Inspect a device";
-exports.builder = {};
-
-exports.handler = function (argv) {
-    let target = argv.idOrIp;
-    log.info("Attempting to inspect", target);
-
-    let foundDevice = false;
-    let pending = 0;
-    const browser = deviceFinder({
-        instances: true,
-        filter: target,
-        token: argv.token,
-    });
-    browser.on("available", (device) => {
-        pending++;
-
-        // TODO: Error handling
+// Resolve a device, specifying the token (see below for how to get the token)
+miio.device({ address: '192.168.1.46', token: '646338354a4d38586851564239356d68' })
+    .then(async device => {
+        // console.log('Connected to', device);
+        const deviceInfo = await device.getDeviceInfo();
+        console.log('Device info', deviceInfo);
         const mgmt = device.management;
-        mgmt
-            .info()
+        // console.log("mgmt", mgmt);
+        mgmt.info()
             .then((info) => {
-                log.plain();
-                log.device(device, true);
 
                 if (!mgmt.parent) {
                     log.plain(chalk.bold("Firmware version:"), info.fw_ver);
@@ -96,6 +79,7 @@ exports.handler = function (argv) {
                     }
                     log.plain();
                 }
+
 
                 const props = device.properties;
                 const keys = Object.keys(props);
@@ -167,27 +151,14 @@ exports.handler = function (argv) {
                         printAction(actions[name]);
                     }
                 });
+
+                device.destroy();
             })
-            .catch((err) => {
-                log.error("Could inspect device. Error was:", err.message);
-            })
-            .then(() => {
-                pending--;
-                process.exit(0); // eslint-disable-line
-            });
+    })
+    .catch(err => {
+        console.log(err)
     });
 
-    const doneHandler = () => {
-        if (pending === 0) {
-            if (!foundDevice) {
-                log.warn("Could not find device");
-            }
-            process.exit(0); // eslint-disable-line
-        }
-    };
-    setTimeout(doneHandler, 5000);
-    browser.on("done", doneHandler);
-};
 
 function printAction(action) {
     log.group(() => {
