@@ -233,7 +233,6 @@ module.exports = class extends Vacuum.with(
      * Activate the find function, will make the device give off a sound.
      */
     find() {
-        console.log("findme")
         return this.call("find_me", [""]).then(() => null);
     }
 };

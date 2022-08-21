@@ -226,9 +226,6 @@ class DeviceInfo {
         const { retries = 5 } = options;
         return await this._retryOnTimeout(retries, async (retriesLeft) => {
             await this.handshake(); // Ensure the handshake is done
-
-            console.log("method:", method)
-            console.log("params", params)
             const request = {
                 id: this._nextId(retries === retriesLeft), // Assign the identifier
                 method,
